@@ -7,6 +7,6 @@ using LinearAlgebra
 
 include("gaussmix.jl")
 
-export gaussmix_ll, gaussmixObs
+export GaussMixtMod, logl, GaussMixtObj
 
 end # module

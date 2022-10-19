@@ -1,63 +1,67 @@
 # test cases for Gaussian mixture models
 using MetaEst
 using Distributions
-obs = gaussmixObs([1.,2.,3.,4.], 2);
-@show gaussmix_ll(obs, [.5, .5], [-1.,1], [4 /9, 4 /9])
-@assert abs(gaussmix_ll(obs, [.5, .5], [-1.,1], [4 /9, 4 /9]) - -38.64208) < 1e-4
+mod = GaussMixtMod([1.,2.,3.,4.], 2);
+logl([.5, .5], [-1.,1], [4 /9, 4 /9], mod)
+@assert abs(logl([.5, .5], [-1.,1], [4 /9, 4 /9], obs) - -38.64208) < 1e-4
 
 # benchmark loglik function
 using BenchmarkTools
+using Random
 p = MixtureModel(Normal, [(-1, 4/9), (1, 4/9)], [.5,.5]);
+Random.seed!(1234)
 y = rand(p, 1000);
-obs = gaussmixObs(y, 2);
+mod = GaussMixtMod(y, 2);
 mu = [-1., -1.];
 w = [.5, .5];
 sigma = [4/9, 4/9];
-@benchmark gaussmix_ll($obs, $w, $mu, $sigma)
-# current best: 29.6μs, 0 memory alloc
-# => slight improvement by adding @turbo to loop to 21.7μs but with 256 bytes
+@benchmark logl($w, $mu, $sigma, $obs)
+# current best: 91.5ns, 0 memory alloc
+# real time is more like 21.5μs
 
 # test function factory using structs
 # this is for creating functions for use with the optimizer
+using MetaEst
+using Distributions
+using Random
+using BenchmarkTools
 p = MixtureModel(Normal, [(-1, 4/9), (1, 4/9)], [.5,.5]);
+Random.seed!(1234)
 y = rand(p, 1000);
-obs = gaussmixObs(y, 2);
+mod = GaussMixtMod(y, 2);
 mu = [-1., 1.];
 w = [.5, .5];
 sigma = [4/9, 4/9];
 θ = vcat(w, mu, sigma);
-loglikecase2 = MetaEst.loglikfun(obs)
-loglikecase2(θ)
-@benchmark loglikecase2($θ)
-# this approach introduces allocations
+obj = GaussMixtObj(mod)
+obj(θ)[1]
+
+@assert obj(θ)[1] == -logl(w, mu, sigma, mod)
+@benchmark obj($θ)
+# this introduces allocations unfortunately
 
 # testing Metaheuristics.jl
 using MetaEst
 using Distributions
 using Metaheuristics
+using Random
 
 # define objective function
 p = MixtureModel(Normal, [(-1, 4/9), (1, 4/9)], [.5,.5]);
+Random.seed!(1234)
 y = rand(p, 1000);
-obs = gaussmixObs(y, 2);
-loglikecase2 = MetaEst.loglikfun(obs)
+mod = GaussMixtMod(y, 2);
+obj = GaussMixtObj(mod);
+
+# objective function
+# annoying that I still have to wrap this
+# maybe can redesign, but works fine for now
+function f(x)
+    return(obj(x))
+end
 
 # set bounds for variables
 bounds = [0. 0. -10. -10. 0. 0.; 1. 1. 10. 10. 10. 10.]
-
-# objective function
-# making another wrapper here
-# can rewrite my original struct to avoid this nesting
-function f(x)
-    fx = -loglikecase2(x)
-    # constraints
-    w₁, w₂ = x[1], x[2]
-    gx = [w₂ - w₁] # w₁ ≥ w₂ => w₂ - w₁ ≤ 0 
-    hx = [w₁ + w₂ - 1]
-
-    return fx, gx, hx
-
-end
 
 # Common options
 options = Options(seed=1234, store_convergence = true)
