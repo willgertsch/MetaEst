@@ -23,7 +23,7 @@ function gaussmix_ll(
     ) where T <: AbstractFloat
 
     n = obs.n
-    g = obs.gl
+    g = obs.g
     LL = 0
     for i in 1:n
         temp = 0

@@ -40,10 +40,6 @@ using Metaheuristics
 p = MixtureModel(Normal, [(-1, 4/9), (1, 4/9)], [.5,.5]);
 y = rand(p, 1000);
 obs = gaussmixObs(y, 2);
-mu = [-1., 1.];
-w = [.5, .5];
-sigma = [4/9, 4/9];
-θ = vcat(w, mu, sigma);
 loglikecase2 = MetaEst.loglikfun(obs)
 
 # set bounds for variables
