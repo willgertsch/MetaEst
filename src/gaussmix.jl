@@ -2,7 +2,7 @@
 # currently only supports 1d data
 
 # type that includes data and model parameters
-struct GaussMixtMod{T <: AbstractFloat}
+mutable struct GaussMixtMod{T <: AbstractFloat}
     y::Vector{T} # data
     g::Int # number of classes
     n::Int # size of data
