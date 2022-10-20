@@ -15,6 +15,11 @@ function metamix(
     # switch between algorithm choices
     if alg == "EM"
 
+        gm = GMM(g, data)
+        w = gm.w
+        μ = vec(gm.μ)
+        σ = sqrt.(vec(gm.Σ))
+        loglik = logl(w, μ, σ, mod)
 
     else # run Metaheuristics
 

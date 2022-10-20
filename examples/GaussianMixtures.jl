@@ -18,5 +18,5 @@ w = gm.w
 σ = sqrt.(vec(gm.Σ))
 
 # compute log-likelihood on same objective function
-obs = gaussmixObs(y, 2)
-gaussmix_ll(obs, w, μ, σ)
+mod = GaussMixtMod(y, 2)
+logl(w, μ, σ, mod)
