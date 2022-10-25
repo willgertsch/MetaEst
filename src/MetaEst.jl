@@ -8,8 +8,15 @@ using Random
 using GaussianMixtures # using EM algorithm from this package
 
 include("gaussmix.jl")
-include("metamix.jl")
+include("MetaMix.jl")
+include("SimMetaMix.jl")
 
-export GaussMixtMod, logl, GaussMixtObj, metamix
+export GaussMixtMod, 
+logl, 
+GaussMixtObj, 
+MetaMix, 
+SimTwoGaussMixEst,
+RMSE,
+bias
 
 end # module

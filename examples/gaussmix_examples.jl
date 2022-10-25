@@ -3,7 +3,7 @@ using MetaEst
 using Distributions
 mod = GaussMixtMod([1.,2.,3.,4.], 2);
 logl([.5, .5], [-1.,1], [4 /9, 4 /9], mod)
-@assert abs(logl([.5, .5], [-1.,1], [4 /9, 4 /9], obs) - -38.64208) < 1e-4
+@assert abs(logl([.5, .5], [-1.,1], [4 /9, 4 /9], mod) - -38.64208) < 1e-4
 
 # benchmark loglik function
 using BenchmarkTools
@@ -15,7 +15,7 @@ mod = GaussMixtMod(y, 2);
 mu = [-1., -1.];
 w = [.5, .5];
 sigma = [4/9, 4/9];
-@benchmark logl($w, $mu, $sigma, $obs)
+@benchmark logl($w, $mu, $sigma, $mod)
 # current best: 91.5ns, 0 memory alloc
 # real time is more like 21.5μs
 

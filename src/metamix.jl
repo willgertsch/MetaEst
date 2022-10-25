@@ -1,8 +1,7 @@
-function metamix(
+function MetaMix(
     data::Vector{T},
     g::Int,
     bounds::Matrix{T},
-    seed::Int;
     parameters::Vector{T} = [0],
     alg::String = "ECA",
     swarm_size::Int = 100,
@@ -29,7 +28,6 @@ function metamix(
         end
 
         options = Options(
-            seed=seed, 
             store_convergence=true,
             iterations = max_iter
             )

@@ -6,19 +6,18 @@ using Random
 # generate data
 p = MixtureModel(Normal, [(-1, 4/9), (1, 4/9)], [.5,.5]);
 Random.seed!(1234);
-y = rand(p, 1000);
+y = rand(p, 30);
 
 bounds = [0. 0. -10. -10. 0. 0.; 1. 1. 10. 10. 10. 10.];
-
-out = metamix(
+Random.seed!(14);
+out = MetaMix(
     y,
     2,
     bounds,
-    1234,
-    parameters = [0.],
-    alg = "ECA",
-    swarm_size = 100,
-    max_iter = 1000
+    [0.],
+    "ECA",
+    100,
+    1000
 )
 
 # results
@@ -26,3 +25,19 @@ out.w
 out.μ
 out.σ
 out.loglik
+
+# find seed that crashes ECA
+# 14
+for i in 1:1000
+    Random.seed!(i)
+    println(i)
+    out = MetaMix(
+    y,
+    2,
+    bounds,
+    [0.],
+    "ECA",
+    100,
+    1000
+)
+end

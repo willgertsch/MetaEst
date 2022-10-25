@@ -64,6 +64,11 @@ end
 
 function(ll::GaussMixtObj)(θ::Vector{T}) where T <: AbstractFloat
 
+    # ECA has an issue where NaN's are generated
+    # consider making a bug report
+    # work-around
+    replace!(θ, NaN=>0)
+
     g = ll.mod.g
     w = θ[1:g]
     μ = θ[(g+1):(2g)]
