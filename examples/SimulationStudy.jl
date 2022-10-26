@@ -2,7 +2,9 @@
 using MetaEst
 
 # check number of threads is maxed out
-@assert Threads.nthreads() == 8
+# Macbook Air (2020) has 8
+# Desktop has Ryzen 5 3600 with 12
+@assert Threads.nthreads() >= 8
 
 # test for a single algorithm
 # result = SimTwoGaussMixEst(
@@ -131,7 +133,7 @@ SA_results_case3 = SimTwoGaussMixEst(
     N
 );
 
-DE_results_case4 = SimTwoGaussMixEst(
+SA_results_case4 = SimTwoGaussMixEst(
     "SA",
     sample_sizes,
     θ4,
@@ -182,8 +184,8 @@ WOA_results_case4 = SimTwoGaussMixEst(
     N
 );
 
-DE_results_case3 = SimTwoGaussMixEst(
-    "DE",
+ϵDE_results_case3 = SimTwoGaussMixEst(
+    "ϵDE",
     sample_sizes,
     θ3,
     N
@@ -225,3 +227,103 @@ ECA_results_case4 = SimTwoGaussMixEst(
     N
 );
 
+# process data
+using DataFrames
+
+
+# collect results into data frames
+EM_df = DataFrame(vcat(
+    EM_results_case1,
+    EM_results_case2,
+    EM_results_case3,
+    EM_results_case4
+), :auto);
+
+DE_df = DataFrame(vcat(
+    DE_results_case1,
+    DE_results_case2,
+    DE_results_case3,
+    DE_results_case4
+), :auto);
+
+PSO_df = DataFrame(vcat(
+    PSO_results_case1,
+    PSO_results_case2,
+    PSO_results_case3,
+    PSO_results_case4
+), :auto);
+
+SA_df = DataFrame(vcat(
+    SA_results_case1,
+    SA_results_case2,
+    SA_results_case3,
+    SA_results_case4
+), :auto);
+
+WOA_df = DataFrame(vcat(
+    WOA_results_case1,
+    WOA_results_case2,
+    WOA_results_case3,
+    WOA_results_case4
+), :auto);
+
+ϵDE_df = DataFrame(vcat(
+    ϵDE_results_case1,
+    ϵDE_results_case2,
+    ϵDE_results_case3,
+    ϵDE_results_case4
+), :auto);
+
+ECA_df = DataFrame(vcat(
+    ECA_results_case1,
+    ECA_results_case2,
+    ECA_results_case3,
+    ECA_results_case4
+), :auto);
+
+# add columns for algorithms
+# add column for case number and sample sizes
+case_numbers = repeat(1:4, inner = size(sample_sizes, 1));
+Ns = repeat(sample_sizes, 4);
+insertcols!(EM_df, 1, :algorithm => "EM", :case => case_numbers, :n => Ns);
+insertcols!(DE_df, 1, :algorithm => "DE", :case => case_numbers, :n => Ns);
+insertcols!(ECA_df, 1, :algorithm => "ECA", :case => case_numbers, :n => Ns);
+insertcols!(PSO_df, 1, :algorithm => "PSO", :case => case_numbers, :n => Ns);
+insertcols!(SA_df, 1, :algorithm => "SA", :case => case_numbers, :n => Ns);
+insertcols!(WOA_df, 1, :algorithm => "WOA", :case => case_numbers, :n => Ns);
+insertcols!(ϵDE_df, 1, :algorithm => "ϵDE", :case => case_numbers, :n => Ns);
+
+# combine into a single data frame
+df = vcat(
+    EM_df,
+    DE_df,
+    ECA_df,
+    PSO_df,
+    SA_df,
+    WOA_df,
+    ϵDE_df
+);
+
+# rename columns
+rename!(df, [
+    :algorithm,
+    :case,
+    :n,
+    :RMSE_w1,
+    :RMSE_w2,
+    :RMSE_μ1,
+    :RMSE_μ2,
+    :RMSE_σ1,
+    :RMSE_σ2,
+    :bias_w1,
+    :bias_w2,
+    :bias_μ1,
+    :bias_μ2,
+    :bias_σ1,
+    :bias_σ2,
+    :median_loglik
+]);
+
+# save to a file
+using CSV
+CSV.write("simulation_study.csv", df)

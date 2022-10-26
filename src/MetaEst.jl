@@ -6,9 +6,10 @@ using Distributions
 using LinearAlgebra
 using Random
 using GaussianMixtures # using EM algorithm from this package
+using NaNMath
 
 include("gaussmix.jl")
-include("MetaMix.jl")
+include("metamix.jl")
 include("SimMetaMix.jl")
 
 export GaussMixtMod, 

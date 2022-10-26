@@ -6,10 +6,14 @@
 # θ̂: estimated values
 function RMSE(θ::T, θ̂::Vector{T}) where T <: AbstractFloat
 
+
     n = size(θ, 1)
 
     # compute MSE
     e = θ .- θ̂
+
+    # NaN safety
+    replace!(e, NaN=>0.)
 
     MSE = (1/n) * dot(e, e)
 
@@ -20,6 +24,9 @@ end
 
 # estimates bias
 function bias(θ::T, θ̂::Vector{T}) where T <: AbstractFloat
+
+    # NaN safety
+    replace!(θ̂, NaN=>0.)
 
     θ̄ = sum(θ̂)/length(θ̂)
 
@@ -106,6 +113,7 @@ function SimTwoGaussMixEst(
             σ̂₂[i] = out.σ[2]
             loglik[i] = out.loglik
         end
+
     
         # compute statistics
         # problem: if all other parameters are the same, means can be swapped and have high scores
@@ -122,7 +130,7 @@ function SimTwoGaussMixEst(
             bias(μ[2], μ̂₂),
             bias(σ[1], σ̂₁),
             bias(σ[2], σ̂₂),
-            median(loglik)
+            NaNMath.median(loglik)
         ]
     
 
