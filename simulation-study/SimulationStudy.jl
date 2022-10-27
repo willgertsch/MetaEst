@@ -327,3 +327,76 @@ rename!(df, [
 # save to a file
 using CSV
 CSV.write("simulation_study.csv", df)
+
+# load back in
+dfr = CSV.read("simulation_study.csv", DataFrame)
+
+# plots
+using Gadfly
+
+# plot for loglikelihood
+plot(dfr, 
+x=:n, xgroup=:case, y=:median_loglik, color=:algorithm,
+ Geom.subplot_grid(Geom.point, Geom.line))
+
+ # RMSE
+ plot(dfr, 
+x=:n, xgroup=:case, y=:RMSE_w1, color=:algorithm,
+ Geom.subplot_grid(Geom.point, Geom.line))
+
+ plot(dfr, 
+ x=:n, xgroup=:case, y=:RMSE_w2, color=:algorithm,
+  Geom.subplot_grid(Geom.point, Geom.line))
+
+  plot(dfr, 
+  x=:n, xgroup=:case, y=:RMSE_μ1, color=:algorithm,
+   Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:RMSE_μ2, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:RMSE_σ1, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:RMSE_σ2, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+# bias
+plot(dfr, 
+x=:n, xgroup=:case, y=:bias_w1, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:bias_w2, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:bias_μ1, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:bias_μ2, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:bias_σ1, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+plot(dfr, 
+x=:n, xgroup=:case, y=:bias_σ2, color=:algorithm,
+Geom.subplot_grid(Geom.point, Geom.line))
+
+# plot this all in a loop
+using Cairo
+using Fontconfig
+for col in names(dfr)[4:end]
+    p = plot(dfr, 
+    x=:n, xgroup=:case, y=col, color=:algorithm,
+    Geom.subplot_grid(Geom.point, Geom.line))
+
+    img = PNG(string("simulation-study/plots/", col, ".png"))
+    draw(img, p)
+end
