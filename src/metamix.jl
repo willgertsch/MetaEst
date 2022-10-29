@@ -1,3 +1,4 @@
+# code for fitting mixture models using metaheuristics
 function MetaMix(
     data::Vector{T},
     g::Int,
@@ -27,32 +28,30 @@ function MetaMix(
             return(obj(x))
         end
 
-        options = Options(
-            store_convergence=true,
-            iterations = max_iter
-            )
+        # options = Options(
+        #     store_convergence=true,
+        #     iterations = max_iter
+        #     )
 
         # select algorithm
         if alg == "ECA"
-            A = ECA(N = swarm_size, options = options)
+            A = ECA()
         elseif alg == "DE"
-            A = DE(N = swarm_size, options = options)
+            A = DE()
         elseif alg == "PSO"
-            A = PSO(N = swarm_size, options = options)
+            A = PSO()
         elseif alg == "SA"
-            A = SA(N = swarm_size, options = options)
+            A = SA()
         elseif alg == "WOA"
-            A = WOA(N = swarm_size, options = options)
+            A = WOA()
         elseif alg == "GA"
             A = GA(
-                N = swarm_size,
                 mutation=PolynomialMutation(;bounds),
                 crossover=SBX(;bounds),
-                environmental_selection=GenerationalReplacement(),
-                options = options
+                environmental_selection=GenerationalReplacement()
            )
         elseif alg == "ϵDE"
-            A = εDE(N = swarm_size, options = options)
+            A = εDE()
         else
             println("Algorithm not supported.")
         end
