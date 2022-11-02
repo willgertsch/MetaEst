@@ -80,3 +80,66 @@ function(ll::GaussMixtObj)(θ::Vector{T}) where T <: AbstractFloat
 
     return fx, gx, hx
 end
+
+# EM algorithm with random start for comparison
+# g:number of classes
+# y: data
+# function em(g::Int, y::Vector{T}, maxiter::Int) where T <: AbstractFloat
+
+#     # construct objective for evaluating logliklihood
+#     mod = GaussMixtMod(y, g)
+
+#     # random start
+#     # set reasonable bounds
+#     # means should be bounded by data max/mutation
+#     μ_lb = minimum(y)
+#     μ_ub = maximum(y)
+
+#     # can approx each normal sd by range/4
+#     # therefore should be able to bound by 0 to range/4
+#     σ_ub = (maximum(y) - minimum(y))/4
+
+#     # generate initial value uniformly in range
+#     w = rand(Uniform(0, 1), g)
+#     μ = rand(Uniform(μ_lb, μ_ub), g)
+#     σ = rand(Uniform(0, σ_ub), g)
+
+#     # calculate objective value
+#     obj_old = logl(w, μ, σ, mod)
+
+#     # run until we stop improving objective value
+#     ftolrel = 1e-12
+#     T = Matrix{Float64}(undef, mod.n, g)
+#     for iter in 1:maxiter
+
+#         # E step
+#         Q = 0
+#         @inbounds for i in 1:n
+#             denom_i = dot(w, pdf.(Normal(μ, σ), y[i]))
+#             @inbounds for j in 1:g
+#                 # update posterior probabilities
+#                 T[i, j] = w[j] * pdf(Normal(μ[j], σ[j]), y[i])
+#             end
+#         end
+
+#         # M step
+#         w = sum(T, dims = 2)./ mod.n
+
+#         # calculate log-likelihood
+
+
+#         # check monotonicity
+#         obj < obj_old && (@warn "monotoniciy violated")
+
+#         # warning about non-convergence
+#         iter == maxiter && (@warn "maximum iterations reached")
+
+#         # check convergence criterion
+#         (obj - obj_old) < ftolrel * (abs(obj_old) + 1) && break
+
+
+#     end
+
+#     # return parameter estimates
+
+# end
