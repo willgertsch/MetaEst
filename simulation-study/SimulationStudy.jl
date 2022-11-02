@@ -326,10 +326,10 @@ rename!(df, [
 
 # save to a file
 using CSV
-CSV.write("simulation_study.csv", df)
+CSV.write("simulation-study/simulation_study.csv", df)
 
 # load back in
-dfr = CSV.read("simulation_study.csv", DataFrame)
+dfr = CSV.read("simulation-study/simulation_study.csv", DataFrame)
 
 # plots
 using Gadfly
