@@ -48,9 +48,9 @@ end
 Evaluate inverse-logit function for vector η.
 """
 function ilogit(
-    η::Vector{T}
+    η::T
 ) where T <: AbstractFloat
-    1 ./ (1 .+ exp.(-η))
+    1 / (1 + exp(-η))
 end
 
 """
@@ -89,12 +89,15 @@ function naive_logl(
 
     n, p, q = size(obs.X, 1), size(obs.X, 2), size(obs.Z, 2)
 
+    ll = 0
+    @inbounds for i in 1:n
 
-    η = X * γ 
-    π_η = prod(ilogit(η))
-    ll = log(π_η) - n * log(2π * σ^2) - 
-    1/(2σ^2) * abs2(norm(Y - Z * (β₁ + β₂))) +
-    log(1 - π_η) - 1/(2σ^2) * abs2(norm(Y - Z * β₁))
+        πη = ilogit(obs.X[i, :]' * γ)
+        ll += log(πη * exp(-1/(2σ^2) * (obs.Y[i] - obs.Z[i, :]' * (β₁ + β₂))^2) +
+        (1 - πη) * exp(-1/(2σ^2) * (obs.Y[i] - obs.Z[i, :]' * β₁)^2))
+    end
+
+    ll += -n/2 * log(2π * σ^2) 
 
     return ll
 
@@ -125,7 +128,7 @@ function LnmModel(obs::LnmObs{T}) where T <: AbstractFloat
     β₁ = Vector{T}(undef, q)
     β₂ = Vector{T}(undef, q)
     γ = Vector{T}(undef, p)
-    σ = 1
+    σ = 1.
 
     # return model object
     LnmModel(obs, β₁, β₂, γ, σ)

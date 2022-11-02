@@ -13,7 +13,7 @@ using StatsBase
 β₁ = [80., 0.] # regression parameters baseline
 β₂ = [0., 30.] # increases due to latent subgroup
 γ = [-1.39, 1.79] # rate of Gene X in women = .6, in men = .2
-σ = 1
+σ = 1.
 
 Random.seed!(1234)
 N = 100;
@@ -21,7 +21,7 @@ N = 100;
 sex = sample([0., 1.], Weights([.6, .4]), N);
 X = hcat(ones(N), sex);
 # sample Gene X data based on logistic regression model
-geneX = rand.(Bernoulli.(ilogit(X * γ)));
+geneX = rand.(Bernoulli.(ilogit.(X * γ)));
 
 # assign half to treatment
 treat = repeat([0., 1.], inner = Int(N/2));
@@ -68,3 +68,53 @@ lm1 = fit(LinearModel, @formula(Y ~ treat), d)
 # adding an interaction effect solves the problem
 lm2 = fit(LinearModel, @formula(Y ~ treat*geneX), d)
 # not useful since geneX is unobserved
+
+
+# testing functions
+obs = LnmObs(Y, X, Z)
+optimal = naive_logl(obs, β₁, β₂, γ, σ)
+@assert naive_logl(obs, β₁, β₂, γ, σ) > naive_logl(obs, [80., 20.], β₂, γ, σ)
+
+using BenchmarkTools
+@benchmark naive_logl($obs, $β₁, $β₂, $γ, $σ)
+# 13.25 μs, 31.25 KiB, 400 allocs
+
+# test using Metaheuristics
+# define objective function
+function f(x)
+
+    # name parameters
+    β₁ = x[1:2]
+    β₂ = x[3:4]
+    γ = x[5:6]
+    σ = x[7]
+
+    # obs is external
+    # flip sign for minimizer
+    fx = -naive_logl(obs, β₁, β₂, γ, σ)
+    gx = [0.0]
+    hx = [0.0]
+
+    return fx, gx, hx
+end
+
+@assert f(vcat(β₁, β₂, γ, σ))[1] == -naive_logl(obs, β₁, β₂, γ, σ)
+
+bounds = [
+    0. -50. -50. 0. -10. -10. 0.;
+    150. 50. 50. 50. 10. 10. 10.];
+
+using Metaheuristics
+result = optimize(
+    f,
+    bounds,
+    DE()
+)
+
+result.best_sol.f
+result.best_sol.x
+
+# optimal values
+# may be different, but should be close to true values
+optimal
+vcat(β₁, β₂, γ, σ)
