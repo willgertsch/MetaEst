@@ -119,9 +119,9 @@ mutable struct LnmModel{T <: AbstractFloat}
 end
 
 """
-    LnmModel(data::Vector{LnmObs})
+    LnmModel(obs::LnmObs)
 
-Create an LNM model that contains data and parameters.
+Create a LNM model that contains data and parameters.
 """
 function LnmModel(obs::LnmObs{T}) where T <: AbstractFloat
 
@@ -142,7 +142,7 @@ end
 """
     fit!(m::LnmModel, algorithm::String)
 
-Fit an `LnmModel` object by ML using a metaheuristic algorithm.
+Fit a `LnmModel` object by ML using a metaheuristic algorithm.
 """
 function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm)
 
