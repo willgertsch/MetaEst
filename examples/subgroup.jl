@@ -72,12 +72,12 @@ lm2 = fit(LinearModel, @formula(Y ~ treat*geneX), d)
 
 # testing functions
 obs = LnmObs(Y, X, Z)
-optimal = naive_logl(obs, β₁, β₂, γ, σ)
-@assert naive_logl(obs, β₁, β₂, γ, σ) > naive_logl(obs, [80., 20.], β₂, γ, σ)
+optimal = logl!(obs, β₁, β₂, γ, σ) # -167 for N = 100
+@assert logl!(obs, β₁, β₂, γ, σ) > logl!(obs, [80., 20.], β₂, γ, σ)
 
 using BenchmarkTools
-@benchmark naive_logl($obs, $β₁, $β₂, $γ, $σ)
-# 13.25 μs, 31.25 KiB, 400 allocs
+@benchmark logl!($obs, $β₁, $β₂, $γ, $σ)
+# 2.2 μs, 0 bytes, 0 allocs
 
 # test using Metaheuristics
 # define objective function
@@ -91,14 +91,14 @@ function f(x)
 
     # obs is external
     # flip sign for minimizer
-    fx = -naive_logl(obs, β₁, β₂, γ, σ)
+    fx = -logl!(obs, β₁, β₂, γ, σ)
     gx = [0.0]
     hx = [0.0]
 
     return fx, gx, hx
 end
 
-@assert f(vcat(β₁, β₂, γ, σ))[1] == -naive_logl(obs, β₁, β₂, γ, σ)
+@assert f(vcat(β₁, β₂, γ, σ))[1] == -logl!(obs, β₁, β₂, γ, σ)
 
 bounds = [
     0. -50. -50. 0. -10. -10. 0.;
@@ -118,3 +118,17 @@ result.best_sol.x
 # may be different, but should be close to true values
 optimal
 vcat(β₁, β₂, γ, σ)
+
+# test model construction
+mod = LnmModel(obs)
+
+# test fitting function
+MetaEst.fit!(
+    mod,
+    DE()
+)
+
+mod.β₁
+mod.β₂
+mod.γ
+mod.σ

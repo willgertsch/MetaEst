@@ -23,7 +23,7 @@ bias,
 LnmObs,
 LnmModel,
 fit!,
-naive_logl,
+logl!,
 ilogit
 
 end # module
