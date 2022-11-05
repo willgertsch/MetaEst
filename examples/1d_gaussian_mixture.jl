@@ -28,6 +28,38 @@ mod = GmmModel(obs)
 using Metaheuristics
 ll = fit!(mod, DE())
 
-mod.w
-mod.μ
-mod.σ
+@show mod.w;
+@show mod.μ;
+@show mod.σ;
+
+# testing EM algorithm
+copy!(mod.w, w)
+copy!(mod.μ, μ)
+copy!(mod.σ, σ)
+@show w;
+@show μ;
+@show σ;
+@show obj1 = update_em!(mod)
+@show mod.w;
+@show mod.μ;
+@show mod.σ;
+
+bm_emupdate = @benchmark update_em!($mod) setup=(
+    copy!(mod.w, w);
+    copy!(mod.μ, μ);
+    copy!(mod.σ, σ);
+)
+# 97.75 μs, 80 bytes, 1 allocs
+
+# test full algorithm
+Random.seed!(1234)
+@time fit_em!(mod, prtfreq = 1);
+
+println("objective value at solution: ", update_em!(mod))
+println()
+println("solution values")
+@show mod.w;
+@show mod.μ;
+@show mod.σ;
+
+bm_em = @benchmark fit_em!($mod)

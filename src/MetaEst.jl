@@ -27,6 +27,8 @@ GmmObs,
 GmmModel,
 fit!,
 logl!,
-ilogit
+ilogit,
+update_em!,
+fit_em!
 
 end # module

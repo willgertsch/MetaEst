@@ -69,6 +69,7 @@ mutable struct GmmModel{T <: AbstractFloat}
     w::Vector{T}
     μ::Vector{T}
     σ::Vector{T}
+    W::Matrix{T}
 end
 
 """
@@ -88,8 +89,11 @@ function GmmModel(obs::GmmObs{T}) where T <: AbstractFloat
     μ = Vector{T}(undef, g)
     σ = Vector{T}(undef, g)
 
+    # storage
+    W = Matrix{T}(undef, n, g)
+
     # return
-    GmmModel(obs, w, μ, σ)
+    GmmModel(obs, w, μ, σ, W)
 
 end
 
@@ -156,5 +160,120 @@ function fit!(m::GmmModel, method::Metaheuristics.AbstractAlgorithm)
     # return log-likelihood
     return -minimum(result.best_sol.f)
 
-    
+end
+
+"""
+    update_em!(m::GmmModel)
+
+Perform the E and M steps of the EM algorithm.
+Return the log-likelihood.
+"""
+function update_em!(m::GmmModel{T}) where T <: AbstractFloat
+
+    n = size(m.obs.Y, 1)
+    g = m.obs.g # preallocate this
+
+    # E step
+    # calculate posterior probabilities
+    for i in 1:n
+
+        # compute denom term
+        # can maybe break this out of the loop?
+        denomᵢ = 0
+        for ℓ in 1:g
+            denomᵢ += m.w[ℓ]/m.σ[ℓ] * exp(-1/(2m.σ[ℓ]^2) * (m.obs.Y[i] - m.μ[ℓ])^2)
+        end
+
+        denomᵢ /= sqrt(2π)
+
+        # posterior probabilities
+        for j in 1:g
+            m.W[i, j] = m.w[j] * (2π * m.σ[j]^2)^(-1/2) * exp(-1/(2m.σ[j]^2)*(m.obs.Y[i] - m.μ[j])^2)
+            m.W[i, j] /= denomᵢ
+        end
+    end
+
+    # M step
+    # column averages
+    m.w .= sum(m.W, dims = 1)' # hunch that this allocates
+    m.w ./= n
+
+    mul!(m.μ, m.W', m.obs.Y)
+    m.μ ./= m.w
+    m.μ ./= n
+
+    @inbounds for j in 1:g
+
+        temp = 0
+        @inbounds for i in 1:n
+            temp += m.W[i, j] * (m.obs.Y[i] - m.μ[j])^2
+        end
+
+        m.σ[j] = sqrt(temp / (m.w[j] * n))
+
+    end
+
+    # return  log-likelihood
+    ll = logl!(m.obs, m.w, m.μ, m.σ)
+    return(ll)
+
+end
+
+"""
+    fit_em!(m::GmmModel)
+
+Fit a 1d Gaussian mixture model using EM with a random start.
+"""
+function fit_em!(
+    m::GmmModel;
+    maxiter::Int = 10_000,
+    ftolrel::AbstractFloat = 1e-12,
+    prtfreq::Int = 0
+)
+
+    # random start
+    # set reasonable bounds
+    # means should be bounded by data max/mutation
+    μ_lb = minimum(m.obs.Y)
+    μ_ub = maximum(m.obs.Y)
+
+    # can approx each normal sd by range/4
+    # therefore should be able to bound by 0 to range/4
+    σ_ub = (maximum(m.obs.Y) - minimum(m.obs.Y))/4
+
+    # generate initial value uniformly in range
+    g = m.obs.g
+    w = rand(Uniform(0, 1), g)
+    μ = rand(Uniform(μ_lb, μ_ub), g)
+    σ = rand(Uniform(0, σ_ub), g)
+
+    copy!(m.w, w)
+    copy!(m.μ, μ)
+    copy!(m.σ, σ)
+
+     # initial update
+     obj = update_em!(m)
+
+     # iterations
+     for iter in 0:maxiter
+        obj_old = obj
+
+        # EM update
+        obj = update_em!(m)
+
+        # print iteration number and objective value
+        prtfreq > 0 && rem(iter, prtfreq) == 0 && println("iter=$iter, obj=$obj")
+
+        # monotonicity warning
+        obj < obj_old && (@warn "monotoniciy violated")
+
+        # check convergence criteria
+        (obj - obj_old) < ftolrel * (abs(obj_old) + 1) && break
+
+        # failure to converge
+        iter == maxiter && (@warn "maximum iterations reached")
+     end
+     # return model
+     return(m)
+
 end
