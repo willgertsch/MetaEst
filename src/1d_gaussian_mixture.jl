@@ -271,9 +271,48 @@ function fit_em!(
         (obj - obj_old) < ftolrel * (abs(obj_old) + 1) && break
 
         # failure to converge
-        iter == maxiter && (@warn "maximum iterations reached")
+        # won't print if in silent mode
+        iter == maxiter && prtfreq > 0 && (@warn "maximum iterations reached")
      end
      # return model
      return(m)
+
+end
+
+"""
+    fit_all!(m::GmmModel)
+
+Fit 1d Gaussian mixture model with all methods.
+Parameters associated with highest likelihood are saved to model object
+"""
+function fit_all!(m::GmmModel)
+
+    metaheuristics = [
+        ECA(),
+        DE(),
+        PSO(),
+        SA(),
+        WOA(),
+        GA(
+        mutation=PolynomialMutation(;bounds),
+        crossover=SBX(;bounds),
+        environmental_selection=GenerationalReplacement()
+        ),
+        ϵDE()
+    ]
+
+    lls = Vector{Float64}(undef, length(metaheuristics) + 1)
+
+    
+
+    # fit using metaheuristics
+    for i in 1:length(metaheuristics)
+        lls[i] = fit!(m, metaheuristics[i])
+    end
+
+    # fit using random start em
+    lls[length(metaheuristics) + 1] = fit_em!(m)
+
+
 
 end
