@@ -29,6 +29,7 @@ fit!,
 logl!,
 ilogit,
 update_em!,
-fit_em!
+fit_em!,
+fit_all!
 
 end # module
