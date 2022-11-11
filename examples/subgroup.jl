@@ -3,6 +3,7 @@ using MetaEst
 using Random
 using Distributions
 using StatsBase
+using Metaheuristics
 
 
 # generate data set
