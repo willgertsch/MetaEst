@@ -165,10 +165,13 @@ function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm)
     end
 
     # set bounds
-    # need an algorithm to automatically set good bounds
+    minY = minimum(m.obs.Y)
+    maxY = maximum(m.obs.Y)
+    rangeY = maxY - minY
+    sdY = √(var(m.obs.Y))
     bounds = [
-    0. -50. -50. 0. -10. -10. 0.;
-    150. 50. 50. 50. 10. 10. 10.]
+    minY -rangeY -rangeY 0. -10. -5. 0.;
+    maxY rangeY rangeY rangeY 10. 5. sdY]
 
     # call optimizer
     result = optimize(
@@ -189,5 +192,59 @@ function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm)
     return logl!(m.obs, m.β₁, m.β₂, m.γ, m.σ)
     # is this best practice?
     # return is different from object updated
+
+end
+
+# model using all methods
+# return list of log-likelihoods
+function fit_all!(m::LnmModel)
+
+    # have to define bounds here
+    bounds = [
+    0. -50. -50. 0. -10. -10. 0.;
+    150. 50. 50. 50. 10. 10. 10.]
+
+    # list of all metaheuristics and options
+    metaheuristics = [
+        ECA(),
+        DE(),
+        PSO(),
+        SA(),
+        WOA(),
+        GA(
+        mutation=PolynomialMutation(;bounds),
+        crossover=SBX(;bounds),
+        environmental_selection=GenerationalReplacement()
+        ),
+        εDE()
+    ]
+
+    # storage for results
+    # + 1 since we also want to fit using EM
+    num_methods = length(metaheuristics) + 1
+    lls = Vector{Float64}(undef, num_methods)
+    β₁ = Matrix{Float64}(undef, num_methods, size(m.β₁, 1))
+    β₂ = Matrix{Float64}(undef, num_methods, size(m.β₂, 1))
+    γ = Matrix{Float64}(undef, num_methods, size(m.γ, 1))
+    σ = Vector{Float64}(undef, num_methods)
+
+    # fit using metaheuristics
+    for i in eachindex(metaheuristics)
+        lls[i] = fit!(m, metaheuristics[i])
+
+        β₁[i, :] = m.β₁
+        β₂[i, :] = m.β₂
+        γ[i, :] = m.γ
+        σ[i] = m.σ
+
+    end
+
+    # EM algorithm
+    # not ready yet
+
+    
+    # return
+    return lls, β₁, β₂, γ, σ
+
 
 end
