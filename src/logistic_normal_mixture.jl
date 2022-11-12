@@ -196,7 +196,7 @@ function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm)
 end
 
 # model using all methods
-# return list of log-likelihoods
+# return matrix of log-likelihoods and parameter estimates
 function fit_all!(m::LnmModel)
 
     # have to define bounds here
@@ -241,10 +241,18 @@ function fit_all!(m::LnmModel)
 
     # EM algorithm
     # not ready yet
+    lls[num_methods] = minimum(lls[1:num_methods-1])
+
+    # update model object with best values
+    index = findmax(lls)[2]
+    m.β₁ .=  β₁[index, :]
+    m.β₂ .= β₂[index, :]
+    m.γ .= γ[index, :]
+    m.σ = σ[index]
 
     
     # return
-    return lls, β₁, β₂, γ, σ
+    return hcat(lls, β₁, β₂, γ, σ)
 
 
 end
