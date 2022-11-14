@@ -59,18 +59,25 @@ summarise(
     gamma1_rmse = rmse(-1.39, gamma1),
     gamma2_rmse = rmse(1.79, gamma2),
     sigma_rmse = rmse(1, sigma)
-)
+) %>%
+filter(method != "SA")
 sim_data_sum
 
 # plots for interesting parameters
 # log-like
 ggplot(sim_data_sum, aes(x = n, y = median_ll, color = method)) +
-geom_point() + geom_line()
+geom_point() + geom_line() +
+theme_bw() +
+labs(x = "Sample size", y = "Median log-likelihood")
 
 # treament effect null group RMSE
 ggplot(sim_data_sum, aes(x = n, y = beta12_rmse, color = method)) +
-geom_point() + geom_line()
+geom_point() + geom_line() +
+theme_bw() +
+labs(x = "Sample size", y = "baseline treatment effect RMSE")
 
 # interaction effect
 ggplot(sim_data_sum, aes(x = n, y = beta22_rmse, color = method)) +
-geom_point() + geom_line()
+geom_point() + geom_line() +
+theme_bw() +
+labs(x = "Sample size", y = "Interaction effect RMSE")
