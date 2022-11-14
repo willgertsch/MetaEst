@@ -41,9 +41,12 @@ for i in 1:N
     end
 end
 
-
-# plotting
+# final dataset
+# write to CSV to be used in R
 d = DataFrame((Y=Y, treat=treat, sex=sex, geneX=geneX));
+using CSV
+CSV.write("examples/clinicaltrial.csv", d)
+
 # see bimodal distributions in treated group
 plot(d,
 x = "Y", xgroup = "treat",
@@ -71,4 +74,9 @@ MetaEst.fit!(
 
 
 # fit using all algorithms
-lls, β₁s, β₂s, γs, σs = fit_all!(mod)
+results = fit_all!(mod)
+
+df = DataFrame(results, ["loglik", "β₁₁", "β₁₂", "β₂₁", "β₂₂", "γ₁", "γ₂", "σ"])[1:7, :];
+df.method = ["ECA", "DE", "PSO", "SA", "WOA", "GA", "εDE"];
+select!(df, :method, :); # reorder columns
+sort!(df, :loglik, rev = true)

@@ -199,10 +199,14 @@ end
 # return matrix of log-likelihoods and parameter estimates
 function fit_all!(m::LnmModel)
 
-    # have to define bounds here
+    # have to define bounds here for GA
+    minY = minimum(m.obs.Y)
+    maxY = maximum(m.obs.Y)
+    rangeY = maxY - minY
+    sdY = √(var(m.obs.Y))
     bounds = [
-    0. -50. -50. 0. -10. -10. 0.;
-    150. 50. 50. 50. 10. 10. 10.]
+    minY -rangeY -rangeY 0. -10. -5. 0.;
+    maxY rangeY rangeY rangeY 10. 5. sdY]
 
     # list of all metaheuristics and options
     metaheuristics = [
