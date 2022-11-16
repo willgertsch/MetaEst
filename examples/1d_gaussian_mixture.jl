@@ -63,3 +63,7 @@ println("solution values")
 @show mod.σ;
 
 bm_em = @benchmark fit_em!($mod)
+
+# test fit all function
+Random.seed!(3124)
+results = fit_all!(mod)

@@ -223,6 +223,7 @@ end
     fit_em!(m::GmmModel)
 
 Fit a 1d Gaussian mixture model using EM with a random start.
+Return log-likelihood
 """
 function fit_em!(
     m::GmmModel;
@@ -274,8 +275,10 @@ function fit_em!(
         # won't print if in silent mode
         iter == maxiter && prtfreq > 0 && (@warn "maximum iterations reached")
      end
-     # return model
-     return(m)
+     
+     # return log-likelihood
+     ll = logl!(m.obs, m.w, m.μ, m.σ)
+    return(ll)
 
 end
 
@@ -283,10 +286,27 @@ end
     fit_all!(m::GmmModel)
 
 Fit 1d Gaussian mixture model with all methods.
-Parameters associated with highest likelihood are saved to model object
+Parameters associated with highest likelihood are saved to model object.
+Returns a matrix of log-likelihoods and parameter estimates
 """
 function fit_all!(m::GmmModel)
 
+    # define bounds for GA
+    μ_lb = minimum(m.obs.Y)
+    μ_ub = maximum(m.obs.Y)
+    σ_ub = (μ_ub - μ_lb)/4
+    g = m.obs.g
+    bounds = [
+        repeat([0.], g); 
+        repeat([μ_lb], g); 
+        repeat([0.], g); 
+        repeat([1.], g); 
+        repeat([μ_ub], g); 
+        repeat([σ_ub], g)
+    ]
+    bounds = convert(Matrix{Float64}, transpose(reshape(bounds, :, 2)))
+
+    # list of all metaheuristics and options
     metaheuristics = [
         ECA(),
         DE(),
@@ -298,21 +318,41 @@ function fit_all!(m::GmmModel)
         crossover=SBX(;bounds),
         environmental_selection=GenerationalReplacement()
         ),
-        ϵDE()
+        εDE()
     ]
 
-    lls = Vector{Float64}(undef, length(metaheuristics) + 1)
-
-    
+    # storage for results
+    num_methods = length(metaheuristics) + 1
+    lls = Vector{Float64}(undef, num_methods)
+    w = Matrix{Float64}(undef, num_methods, size(m.w, 1))
+    μ = Matrix{Float64}(undef, num_methods, size(m.μ, 1))
+    σ = Matrix{Float64}(undef, num_methods, size(m.σ, 1))
 
     # fit using metaheuristics
-    for i in 1:length(metaheuristics)
+    for i in eachindex(metaheuristics)
+
         lls[i] = fit!(m, metaheuristics[i])
+        w[i, :] .= m.w
+        μ[i, :] .= m.μ
+        σ[i, :] .= m.σ
+
     end
 
-    # fit using random start em
-    lls[length(metaheuristics) + 1] = fit_em!(m)
+    # EM algorithm takes last slot
+    lls[num_methods] = fit_em!(m)
+    w[num_methods, :] .= m.w
+    μ[num_methods, :] .= m.μ
+    σ[num_methods, :] .= m.σ
 
+    # update model object with best values
+    replace!(lls, NaN => -Inf) # PSO acting weird
+    index = findmax(lls)[2]
+    m.w .= w[index, :]
+    m.μ .= μ[index, :]
+    m.σ .= σ[index, :]
+
+    # return
+    return hcat(lls, w, μ, σ)
 
 
 end
