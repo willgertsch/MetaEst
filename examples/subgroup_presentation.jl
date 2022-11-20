@@ -83,7 +83,7 @@ sort!(df, :loglik, rev = true)
 
 # simulation study comparing different algorithms
 # and at different sample sizes
-Nsims = 10 # run 1000 simulations
+Nsims = 1000 # run 1000 simulations
 sample_sizes = [30, 50, 100, 300, 800]
 #sample_sizes = [30, 50]
 simulation_results = Vector{Matrix{Float64}}(undef, Nsims * length(sample_sizes));

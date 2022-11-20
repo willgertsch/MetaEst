@@ -68,9 +68,25 @@ bm_em = @benchmark fit_em!($mod)
 Random.seed!(3124)
 results = fit_all!(mod)
 
-# simulation of case 2
+
 using MetaEst
 using Random
+using CSV
+
+# simulation of case 1
+Y = Vector{Float64}(undef, 100)
+g = 2
+obs = GmmObs(Y, g)
+mod = GmmModel(obs)
+mod.w = [2/3,1/3]
+mod.μ = [0., 0.]
+mod.σ = [1., .01]
+Random.seed!(1234)
+result = sim(mod, 1000, [30, 50, 100, 150, 200, 300]);
+CSV.write("simulation-study/twoGaussians/case1.csv", result)
+
+
+# simulation of case 2
 Y = Vector{Float64}(undef, 100)
 g = 2
 obs = GmmObs(Y, g)
@@ -78,5 +94,30 @@ mod = GmmModel(obs)
 mod.w = [.5,.5]
 mod.μ = [-1., 1.]
 mod.σ = [4/9, 4/9]
-Random.seed!(1234)
+Random.seed!(552)
 result = sim(mod, 1000, [30, 50, 100, 150, 200, 300]);
+CSV.write("simulation-study/twoGaussians/case2.csv", result)
+
+# simulation of case 3
+Y = Vector{Float64}(undef, 100)
+g = 2
+obs = GmmObs(Y, g)
+mod = GmmModel(obs)
+mod.w = [3/4,1/4]
+mod.μ = [0., 3/2]
+mod.σ = [1., 1/9]
+Random.seed!(4123)
+result = sim(mod, 1000, [30, 50, 100, 150, 200, 300]);
+CSV.write("simulation-study/twoGaussians/case3.csv", result)
+
+# simulation of case 4
+Y = Vector{Float64}(undef, 100)
+g = 2
+obs = GmmObs(Y, g)
+mod = GmmModel(obs)
+mod.w = [1/4,3/4]
+mod.μ = [0., 3/2]
+mod.σ = [1/9, 1.]
+Random.seed!(554)
+result = sim(mod, 1000, [30, 50, 100, 150, 200, 300]);
+CSV.write("simulation-study/twoGaussians/case4.csv", result)
