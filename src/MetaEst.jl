@@ -7,6 +7,8 @@ using LinearAlgebra
 using Random
 using GaussianMixtures # using EM algorithm from this package
 using NaNMath
+using StatsBase
+using DataFrames
 
 include("gaussmix.jl")
 include("metamix.jl")
@@ -30,6 +32,7 @@ logl!,
 ilogit,
 update_em!,
 fit_em!,
-fit_all!
+fit_all!,
+sim
 
 end # module

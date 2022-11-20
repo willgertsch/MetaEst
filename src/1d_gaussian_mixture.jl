@@ -110,6 +110,7 @@ function fit!(m::GmmModel, method::Metaheuristics.AbstractAlgorithm)
         g = m.obs.g
         # name parameters
         w = x[1:g]
+        w[w .<= 0] .= .00001 # fix GA issue
         μ = x[(g+1):(2g)]
         σ = x[(2g+1):3g]
 
@@ -354,5 +355,64 @@ function fit_all!(m::GmmModel)
     # return
     return hcat(lls, w, μ, σ)
 
+
+end
+
+
+"""
+    sim!(m::GmmModel, Nsim, sample_sizes)
+
+Run a simulation study using all algorithms assuming that parameters
+in m are the true values. Returns a dataframe of log-likelihoods and parameter estimates
+"""
+function sim(m::GmmModel, Nsim::Int, sample_sizes::Vector{Int})
+
+    # save parameter true values
+    w = m.w
+    μ = m.μ
+    σ = m.σ
+    g = m.obs.g
+    
+    # initialize results storage
+    simulation_results = Vector{Matrix{Float64}}(undef, Nsim * length(sample_sizes))
+    for i in 1:Nsim * length(sample_sizes)
+        simulation_results[i] = Matrix{Float64}(undef, 8, 3g + 2)
+    end
+
+
+    for i in eachindex(sample_sizes)
+
+        N_i = sample_sizes[i]
+        println("Simulating for sample size ", N_i)
+
+        # simulate in parallel
+        Threads.@threads for j in 1:Nsim
+
+            # generate simulated data
+            Y = Vector{Float64}(undef, N_i)
+            # sample group membership with weights w
+            group = StatsBase.sample(1:g, Weights(w), N_i)
+            # generate samples
+            @inbounds for ii in 1:N_i
+                Y[ii] = rand(Normal(μ[group[ii]], σ[group[ii]]))
+            end
+
+            # fit all models to the data
+            obs = GmmObs(Y, g)
+            mod = GmmModel(obs)
+            index = (i*Nsim - Nsim + j)
+            simulation_results[index][:, 1:(3g+1)] .= fit_all!(mod)
+            simulation_results[index][:, 3g+2] .= N_i
+
+        end
+
+    end
+
+    # process data
+    df = DataFrame(reduce(vcat, simulation_results), :auto)
+    df.method = repeat(["ECA", "DE", "PSO", "SA", "WOA", "GA", "εDE", "EM"], Nsim*length(sample_sizes))
+    select!(df, :method, :)
+
+    return df
 
 end

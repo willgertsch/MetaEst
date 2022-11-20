@@ -67,3 +67,16 @@ bm_em = @benchmark fit_em!($mod)
 # test fit all function
 Random.seed!(3124)
 results = fit_all!(mod)
+
+# simulation of case 2
+using MetaEst
+using Random
+Y = Vector{Float64}(undef, 100)
+g = 2
+obs = GmmObs(Y, g)
+mod = GmmModel(obs)
+mod.w = [.5,.5]
+mod.μ = [-1., 1.]
+mod.σ = [4/9, 4/9]
+Random.seed!(1234)
+result = sim(mod, 1000, [30, 50, 100, 150, 200, 300]);
