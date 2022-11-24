@@ -27,6 +27,7 @@ mutable struct mmModel{T <: AbstractFloat}
 
     # storage
     W::Matrix{T}
+    lpdfs::Vector{T}
 
 end
 
@@ -53,13 +54,18 @@ function mmModel(
         θ[i] .= params(components(model)[i])
     end
 
-    w = model.prior.p
+    w = zeros(g)
+    copy!(w, model.prior.p)
 
     # storage
+    # posterior probabilites for EM
     W = Matrix{T}(undef, n, g)
+    # log-pdfs for log-likelihood function
+    lpdfs = Vector{T}(undef, n)
+    
 
     # return
-    mmModel(Y, model, n, g, θ, w, W)
+    mmModel(Y, model, n, g, θ, w, W, lpdfs)
 
 end
 
@@ -88,6 +94,57 @@ function update_param!(
     # update weights
     mod.model.prior.p .= w
 
+    # return
+    mod
+
+end
+
+
+"""
+    mixlogpdf!(r::AbstractArray, d::AbstractMixtureModel, x::Vector)
+
+This function is in the Distributions.jl code but is not accessible. Not sure
+    why this wasn't included. 
+"""
+function mixlogpdf!(r::AbstractArray, d::MixtureModel, x)
+    K = ncomponents(d)
+    p = probs(d)
+    n = length(r)
+    Lp = Matrix{eltype(p)}(undef, n, K)
+    m = fill(-Inf, n)
+    @inbounds for i in eachindex(p)
+        pi = p[i]
+        if pi > 0.0
+            lpri = log(pi)
+            lp_i = view(Lp, :, i)
+            # only using 1d, so can skip
+            lp_i .= logpdf.(component(d, i), x)
+
+            # in the mean time, add log(prior) to lp and
+            # update the maximum for each sample
+            @inbounds for j = 1:n
+                lp_i[j] += lpri
+                if lp_i[j] > m[j]
+                    m[j] = lp_i[j]
+                end
+            end
+        end
+    end
+
+    fill!(r, 0.0)
+    @inbounds for i = 1:K
+        if p[i] > 0.0
+            lp_i = view(Lp, :, i)
+            for j = 1:n
+                r[j] += exp(lp_i[j] - m[j])
+            end
+        end
+    end
+
+    @inbounds for j = 1:n
+        r[j] = log(r[j]) + m[j]
+    end
+    return r
 end
 
 
@@ -95,18 +152,19 @@ end
     logl!(mod::mmModel, param::Vector{Vector})
 
 Compute log-likelihood function of mixture model at parameter values.
-Using ! notation because internal storage vectors may be updated.
+Using ! notation because internals are updated.
 """
 function logl!(
     mod::mmModel{T},
-    param::Vector{Vector{T}},
+    θ::Vector{Vector{T}},
     w::Vector{T}
 ) where T <: AbstractFloat
 
-    # construct a mixture model with given parameters
+    # update parameters of internal model
+    update_param!(mod, θ, w)
 
+    mixlogpdf!(mod.lpdfs, mod.model, mod.Y)
 
-    mm = MixtureModel(distributions, w)
-
+    return sum(mod.lpdfs)
 
 end
