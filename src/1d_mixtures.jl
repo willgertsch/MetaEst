@@ -168,3 +168,116 @@ function logl!(
     return sum(mod.lpdfs)
 
 end
+
+"""
+    fit!(m::mmModel, algorithm::String)
+
+Fit a `mmModel` object by ML using a metaheuristic algorithm.
+"""
+function fit!(m::mmModel, method::Metaheuristics.AbstractAlgorithm)
+
+    # construct objective function
+    function f(x)
+
+        g = m.g
+        # name parameters
+        w = x[1:g]
+        w[w .<= 0] .= .00001 # fix GA issue
+        θ = copy(m.θ) # take structure from model
+        # fill θ sequentially
+        # all parameters from component t are filled before t+1
+        index = g+1
+        for i in eachindex(θ)
+            v = θ[i]
+            for j in eachindex(v)
+                v[j] = x[index]
+                index += 1
+            end
+        end
+
+        # obs is external
+        # flip sign for minimizer
+        fx = -logl!(m, θ, w)
+        gx = [0.0]
+        hx = [sum(w) - 1.] # weights sum to 1
+
+        return fx, gx, hx
+    end
+
+    # set bounds
+    g = m.g
+    bounds = zeros(2, g + sum(length.(m.θ)))
+    
+
+    # bounds for weights
+    bounds[1, 1:g] .= 0.
+    bounds[2, 1:g] .= 1.
+    index = g + 1
+
+    # worthwhile to double check non-Gaussian bounds
+    for family in typeof.(components(m.model))
+
+        # manually specify for each distribution family
+        # won't work in general, but good enough for this paper
+        if family <: Normal
+
+            # μ
+            bounds[:, index] .= [minimum(m.Y), maximum(m.Y)]
+            # σ
+            bounds[:, index + 1] .= [0., √(var(m.Y))]
+            index += 2
+
+        elseif family <: Weibull
+            
+            # α
+            bounds[:, index] .= [0., maximum(m.Y)]
+            # θ
+            bounds[:, index + 1] .= [0., maximum(m.Y)]
+            index += 2
+
+        elseif family <: Gamma
+
+            # α
+            bounds[:, index] .= [0., maximum(m.Y)]
+            # θ
+            bounds[:, index + 1] .= [0., maximum(m.Y)]
+            index += 2
+
+        elseif family <: GeneralizedExtremeValue
+
+            # μ
+            bounds[:, index] .= [minimum(m.Y), maximum(m.Y)]
+            # σ
+            bounds[:, index+1] .= [0., maximum(m.Y)]
+            # ξ
+            # can bound at 0 since we only are interested in x>0
+            bounds[:, index+2] .= [0., maximum(m.Y)]
+            index += 3
+        end
+
+    end
+
+    # call optimizer
+    result = optimize(
+        f,
+        bounds,
+        method
+    )
+
+    # extract parameters
+    x = result.best_sol.x
+    # fill θ sequentially
+    # all parameters from component t are filled before t+1
+    index = g+1
+    for i in eachindex(m.θ)
+        for j in eachindex(m.θ[i])
+            m.θ[i][j] = x[index]
+            index += 1
+        end
+    end
+
+    m.w .= x[1:g]
+
+    # return log-likelihood
+    return -minimum(result.best_sol.f)
+end

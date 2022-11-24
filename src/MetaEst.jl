@@ -37,6 +37,7 @@ fit_all!,
 sim,
 mmModel,
 update_param!,
-mixlogpdf!
+mixlogpdf!,
+logl2!
 
 end # module
