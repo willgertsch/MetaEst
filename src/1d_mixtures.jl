@@ -46,6 +46,8 @@ function mmModel(
     n = size(Y, 1)
     g = ncomponents(model)
 
+    
+
     # initialize parameter data structure
     # values come from values specified by user in MixtureModel object
     θ = Vector{Vector{T}}(undef, g)
