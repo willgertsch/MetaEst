@@ -52,18 +52,6 @@ function LnmmObs(
     )
 end
 
-"""
-    logit!(η::Vector{T})
-
-An in-place version of the inverse logistic function.
-"""
-function ilogit!(η::Vector{T}) where T <: AbstractFloat
-
-    @inbounds for i in eachindex(η)
-        η[i] = ilogit(η[i])
-    end
-
-end
 
 """
     logl!(obs::LnmmObs, β₁, β₂, γ, σ)

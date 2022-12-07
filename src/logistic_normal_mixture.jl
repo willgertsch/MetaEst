@@ -57,17 +57,6 @@ function LnmObs(
     )
 end
 
-"""
-    ilogit(η::Vector{T})
-
-Evaluate inverse-logit function for vector η.
-"""
-function ilogit(
-    η::T
-) where T <: AbstractFloat
-    1 / (1 + exp(-η))
-end
-
 
 """
     logl!(obs::LnmObs, β₁, β₂, γ, σ)

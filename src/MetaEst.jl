@@ -10,22 +10,14 @@ using NaNMath
 using StatsBase
 using DataFrames
 
-include("gaussmix.jl")
-include("metamix.jl")
-include("SimMetaMix.jl")
+include("utilities.jl")
 include("logistic_normal_mixture.jl")
 include("1d_gaussian_mixture.jl")
 include("1d_mixtures.jl")
 include("lnmm.jl")
 
 export 
-GaussMixtMod, 
-logl, 
-GaussMixtObj, 
-MetaMix, 
-SimTwoGaussMixEst,
-RMSE,
-bias,
+logl,
 LnmObs,
 LnmModel,
 GmmObs,

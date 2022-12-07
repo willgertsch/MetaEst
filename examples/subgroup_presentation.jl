@@ -69,7 +69,7 @@ obs = LnmObs(Y, X, Z)
 mod = LnmModel(obs)
 MetaEst.fit!(
     mod,
-    ECA()
+    DE()
 )
 
 
