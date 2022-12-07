@@ -16,8 +16,10 @@ include("SimMetaMix.jl")
 include("logistic_normal_mixture.jl")
 include("1d_gaussian_mixture.jl")
 include("1d_mixtures.jl")
+include("lnmm.jl")
 
-export GaussMixtMod, 
+export 
+GaussMixtMod, 
 logl, 
 GaussMixtObj, 
 MetaMix, 
@@ -38,6 +40,7 @@ sim,
 mmModel,
 update_param!,
 mixlogpdf!,
-logl2!
+logl2!,
+ilogit!
 
 end # module
