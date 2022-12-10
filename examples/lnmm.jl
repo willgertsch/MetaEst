@@ -12,9 +12,9 @@ using StatsBase
 
 
 
-β₁ = [80., 0., 2., 0.] 
-β₂ = [-6., 0., 2., 1.5] 
-γ = [-1.39, 1.79, -0.5] # rate of Gene X in women = .6, in men = .2, when race constant
+β₁ = [80., 0., 0., 0.] 
+β₂ = [0., 0., 0., 1.] 
+γ = [-1.39, 1.79, 0.5] # rate of Gene X in women = .6, in men = .2, when race constant
 # being raceX increases the odds of having the gene
 σ = 7. # residual variance
 τ = 3. # random effect variance
