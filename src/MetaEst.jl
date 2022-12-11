@@ -22,6 +22,8 @@ LnmObs,
 LnmModel,
 GmmObs,
 GmmModel,
+LnmmObs,
+LnmmModel,
 fit!,
 logl!,
 ilogit,
@@ -33,6 +35,7 @@ mmModel,
 update_param!,
 mixlogpdf!,
 logl2!,
-ilogit!
+ilogit!,
+naive_logl!
 
 end # module

@@ -3,6 +3,10 @@ using MetaEst
 using Random
 using Distributions
 using StatsBase
+using DataFrames
+using CSV
+using BenchmarkTools
+using Metaheuristics
 # generate data
 # Model:
 # Yᵢ = Zᵢ(β₁ + β₂δᵢ) + ξᵢ + ϵᵢ
@@ -11,7 +15,7 @@ using StatsBase
 # ϵᵢ ∼ N(0, σ²I)
 
 
-
+# true values
 β₁ = [80., 0., 0., 0.] 
 β₂ = [0., 0., 0., 1.] 
 γ = [-1.39, 1.79, 0.5] # rate of Gene X in women = .6, in men = .2, when race constant
@@ -74,9 +78,35 @@ end
 df = df[2:end, :];
 df = DataFrame(df, :auto)
 
-using DataFrames
-using CSV
+
 CSV.write("examples/longitudinal_data.csv", df)
 
 
+# test single likelihood function at true values
+# choose individual with 7 time points
+logl!(obsvec[7], β₁, β₂, γ, σ, τ)
+out = Vector{Float64}(undef, length(obsvec))
+for i in eachindex(obsvec)
+    out[i] = logl!(obsvec[i], β₁, β₂, γ, σ, τ)
+end
+@benchmark logl!($obsvec[4], $β₁, $β₂, $γ, $σ, $τ)
+# 580ns, 0 bytes, 0 allocs
 
+# test logl for entire data
+m = LnmmModel(obsvec);
+logl!(m, β₁, β₂, γ, σ, τ)
+@benchmark logl!($m, $β₁, $β₂, $γ, $σ, $τ)
+# 358 μs, 0 bytes, 0 allocs
+
+# test fitting function
+bounds = [
+        75.  -5. -5. -5. -5. -5. -5. 0. -5. -5. -5. 0. 0.;
+        85. 5. 5. 5. 5. 5. 5. 5. 5. 5. 5. 10. 10.
+    ]
+MetaEst.fit!(m, DE(), bounds)
+m.β₁
+m.β₂
+m.γ
+m.σ
+m.τ
+logl!(m, m.β₁, m.β₂, m.γ, m.σ, m.τ)
