@@ -105,6 +105,9 @@ mutable struct LnmModel{T <: AbstractFloat}
     β₂::Vector{T}
     γ::Vector{T}
     σ::T 
+    W::Matrix{T}
+    storage_n::Vector{T}
+
 end
 
 """
@@ -115,6 +118,7 @@ Create a LNM model that contains data and parameters.
 function LnmModel(obs::LnmObs{T}) where T <: AbstractFloat
 
     # dims
+    n = size(obs.Y, 1)
     p = size(obs.X, 2)
     q = size(obs.Z, 2)
     # parameters
@@ -123,8 +127,11 @@ function LnmModel(obs::LnmObs{T}) where T <: AbstractFloat
     γ = Vector{T}(undef, p)
     σ = 1.
 
+    W = Matrix{T}(undef, n, 2)
+    storage_n = Vector{T}(undef, n)
+
     # return model object
-    LnmModel(obs, β₁, β₂, γ, σ)
+    LnmModel(obs, β₁, β₂, γ, σ, W, storage_n)
 
 end
 
@@ -247,5 +254,42 @@ function fit_all!(m::LnmModel)
     # return
     return hcat(lls, β₁, β₂, γ, σ)
 
+
+end
+
+"""
+    update_em!(m::LnmModel)
+Perform the E and M steps of the EM algorithm.
+Return the log-likelihood
+"""
+function update_em!(m::LnmmModel{T}) where T <: AbstractFloat
+
+    n = size(m.obs.Y, 1)
+
+    # E Step
+    # calculate posterior probabilities
+    mul!(m.storage_n, m.obs.X, m.γ)
+    ilogit!(m.storage_n)
+    for i in 1:n
+        # compute denom term
+        pᵢ = m.storage_n[i]
+        denomᵢ = pᵢ * exp(-1/(2m.σ^2) * 
+        (m.obs.Y[i] - dot(m.Z[i, :], m.β₁ + m.β₂))^2) +
+        (1 - pᵢ) * exp(-1/(2m.σ^2) *
+        (m.obs.Y[i] - dot(m.Z[i, :], m.β₁))^2)
+        denomᵢ /= sqrt(2π * m.σ^2)
+
+        # posterior probabilities
+        m.W[i, 1] = pᵢ * exp(-1/(2m.σ^2) * 
+        (m.obs.Y[i] - dot(m.Z[i, :], m.β₁ + m.β₂))^2) / denomᵢ
+        m.W[i, 2] = (1 - pᵢ) * exp(-1/(2m.σ^2) *
+        (m.obs.Y[i] - dot(m.Z[i, :], m.β₁))^2) / denomᵢ
+    end
+
+    # M step
+    # update γ => use logistic regression
+    # update β₁ 
+    # update β₂
+    # update σ => use linear regression
 
 end

@@ -11,7 +11,7 @@ function ilogit(
 end
 
 """
-logit!(η::Vector{T})
+ilogit!(η::Vector{T})
 
 An in-place version of the inverse logistic function.
 """

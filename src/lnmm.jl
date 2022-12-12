@@ -131,7 +131,6 @@ function logl!(
     C = dot(obs.storage_m2, obs.storage_m3)
 
     ll = -0.5m * log(2π) - m*log(σ) - 0.5*log(1+m*(τ/σ)^2)
-    #ll += log(p * exp(-0.5 * A) + (1 - p) * exp(-0.5 * B))
     ll += -0.5B + log(p * exp(-0.5C) + 1 - p)
     return ll
 
