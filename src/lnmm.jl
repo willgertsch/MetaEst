@@ -86,6 +86,7 @@ function naive_logl!(
 end
 
 
+
 """
     logl!(obs::LnmmObs, β₁, β₂, γ, σ)
 
@@ -113,7 +114,7 @@ function logl!(
     end
     obs.storage_mm1 ./= σ^2
 
-    # (Yᵢ - Zᵢβ₁)'Ω⁻¹(Yᵢ - Zᵢβ₁)
+    # B = (Yᵢ - Zᵢβ₁)'Ω⁻¹(Yᵢ - Zᵢβ₁)
     mul!(obs.storage_m1, obs.Z, β₁)
     mul!(obs.storage_m2, obs.storage_mm1, obs.storage_m1)
     copy!(obs.storage_m3, obs.Y)
@@ -122,18 +123,22 @@ function logl!(
     B = dot(obs.Y, obs.storage_m1) + 
     dot(obs.storage_m2, obs.storage_m3)
 
-    # (Yᵢ - Zᵢ(β₁ + β₂))'Ω⁻¹(Yᵢ - Zᵢ(β₁ + β₂))
+    # A = (Yᵢ - Zᵢ(β₁ + β₂))'Ω⁻¹(Yᵢ - Zᵢ(β₁ + β₂))
+    # C = (2Yᵢ + Zᵢβ₂)'Ω⁻¹ᵢZᵢβ₂
     mul!(obs.storage_m1, obs.Z, β₂)
     mul!(obs.storage_m2, obs.storage_mm1, obs.storage_m1)
     BLAS.gemv!('N', 1.0, obs.Z, β₂, 2.0, obs.storage_m3)
-    A = B + dot(obs.storage_m2, obs.storage_m3)
+    C = dot(obs.storage_m2, obs.storage_m3)
 
     ll = -0.5m * log(2π) - m*log(σ) - 0.5*log(1+m*(τ/σ)^2)
-    ll += log(p * exp(-0.5 * A) + (1 - p) * exp(-0.5 * B))
+    #ll += log(p * exp(-0.5 * A) + (1 - p) * exp(-0.5 * B))
+    ll += -0.5B + log(p * exp(-0.5C) + 1 - p)
     return ll
 
 
 end
+
+
 
 # define model object that contains multiple observations + parameters
 mutable struct LnmmModel{T <: AbstractFloat}
