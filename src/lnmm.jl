@@ -131,7 +131,16 @@ function logl!(
     C = dot(obs.storage_m2, obs.storage_m3)
 
     ll = -0.5m * log(2π) - m*log(σ) - 0.5*log(1+m*(τ/σ)^2)
-    ll += -0.5B + log(p * exp(-0.5C) + 1 - p)
+    # sneaky time 😎
+    temp = exp(-0.5C)
+    if temp == 0
+        ll += -0.5B + log(p * exp(-0.5C) + 1 - p)
+    elseif temp == Inf
+        ll += -0.5B - 0.5C + log(p + (1 - p) * exp(0.5C))
+    else
+        ll += -0.5B + log(p * exp(-0.5C) + 1 - p)
+    end
+
     return ll
 
 
