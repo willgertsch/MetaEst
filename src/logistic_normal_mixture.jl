@@ -136,6 +136,47 @@ function LnmModel(obs::LnmObs{T}) where T <: AbstractFloat
 end
 
 """
+    generate_lnm(N, β₁, β₂, γ, σ)
+
+Simulate data from logistic-normal mixture model.
+Returns a LnmModel object, ready for fitting.
+"""
+function generate_lnm(
+    N::Int,
+    β₁::Vector{T},
+    β₂::Vector{T},
+    γ::Vector{T},
+    σ::T
+) where T <: AbstractFloat
+
+    # sample men and women with 3/2 ratio
+    sex = StatsBase.sample([0., 1.], Weights([.6, .4]), N);
+    X = hcat(ones(N), sex);
+    # sample Gene X data based on logistic regression model
+    geneX = rand.(Bernoulli.(ilogit.(X * γ)));
+
+    # assign half to treatment
+    treat = repeat([0., 1.], inner = Int(N/2));
+    Z = hcat(ones(N), treat);
+
+    # generate from the mixture distribution
+    Y = Vector{Float64}(undef, N)
+    for i in 1:N
+        if geneX[i] == 1.
+            μ = Z[i, :]' * (β₁ + β₂)
+            Y[i] = rand(Normal(μ, σ))
+        else
+            μ = Z[i, :]' * β₁
+            Y[i] = rand(Normal(μ, σ))
+        end
+    end
+
+    obs = LnmObs(Y, X, Z)
+    mod = LnmModel(obs)
+    return mod
+end
+
+"""
     fit!(m::LnmModel, algorithm::String)
 
 Fit a `LnmModel` object by ML using a metaheuristic algorithm.
@@ -262,7 +303,7 @@ end
 Perform the E and M steps of the EM algorithm.
 Return the log-likelihood
 """
-function update_em!(m::LnmmModel{T}) where T <: AbstractFloat
+function update_em!(m::LnmModel{T}) where T <: AbstractFloat
 
     n = size(m.obs.Y, 1)
 

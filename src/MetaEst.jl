@@ -36,6 +36,7 @@ update_param!,
 mixlogpdf!,
 logl2!,
 ilogit!,
-naive_logl!
+naive_logl!,
+generate_lnm
 
 end # module
