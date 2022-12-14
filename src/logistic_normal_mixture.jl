@@ -299,6 +299,54 @@ function fit_all!(m::LnmModel)
 end
 
 """
+ confint!(m::LnmModel, nsamples, sample_size)
+
+ Compute confidence intervals for parameters using bootstrapping.
+    Note that this is parallelized by default.
+"""
+function confint!(
+    m::LnmModel{T}, nsamples::Int, sample_size::Int) where T <: AbstractFloat
+
+    β₁s = Matrix{T}(undef, nsamples, size(m.β₁, 1))
+    β₂s = Matrix{T}(undef, nsamples, size(m.β₂, 1))
+    γs = Matrix{T}(undef, nsamples, size(m.γ, 1))
+    σs = Vector{T}(undef, nsamples)
+
+    # parallel loop
+    n = size(m.obs.Y, 1)
+    Threads.@threads for i in 1:nsamples
+
+        # sample subset of data with replacement
+        ids = StatsBase.sample(1:n, sample_size)
+        Y = m.obs.Y[ids]
+        Z = m.obs.Z[ids, :]
+        X = m.obs.X[ids, :]
+        obs = LnmObs(Y, X, Z)
+        modᵢ = LnmModel(obs)
+
+        # fit model
+        fit!(modᵢ, DE())
+
+        # save parameter values
+        β₁s[i, :] .= modᵢ.β₁
+        β₂s[i, :] .= modᵢ.β₂
+        γs[i, :] .= modᵢ.γ
+        σs[i] = modᵢ.σ
+    end
+
+    # return median and 95% CI
+    out = hcat(β₁s, β₂s, γs, σs)
+    medians = mapslices(median, out; dims = 1)
+    plb(x) = percentile(x, 2.5)
+    pub(x) = percentile(x, 97.5)
+    lb = mapslices(plb, out; dims = 1)
+    ub = mapslices(pub, out; dims = 1)
+    return DataFrame(median=medians[1, :], lb=lb[1, :], ub=ub[1, :])
+
+
+end
+
+"""
     update_em!(m::LnmModel)
 Perform the E and M steps of the EM algorithm.
 Return the log-likelihood

@@ -81,6 +81,9 @@ df.method = ["ECA", "DE", "PSO", "SA", "WOA", "GA", "εDE"];
 select!(df, :method, :); # reorder columns
 sort!(df, :loglik, rev = true)
 
+# confidence intervals using bootstrapping
+M = confint!(mod, 1000, 80)
+
 # simulation study comparing different algorithms
 # and at different sample sizes
 Nsims = 1000 # run 1000 simulations
@@ -96,7 +99,6 @@ end
 β₂ = [0., 30.] # increases due to latent subgroup
 γ = [-1.39, 1.79] # rate of Gene X in women = .6, in men = .2
 σ = 1.
-
 
 # parallel loop
 Random.seed!(4321)
@@ -157,3 +159,5 @@ select!(df, :method, :); # reorder columns
 # write to CSV for analysis in R
 using CSV
 CSV.write("examples/subgroup_simulation_study.csv", df)
+
+
