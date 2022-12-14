@@ -82,7 +82,7 @@ select!(df, :method, :); # reorder columns
 sort!(df, :loglik, rev = true)
 
 # confidence intervals using bootstrapping
-M = confint!(mod, 1000, 80)
+M = confint!(mod, 1000, 80, "DE")
 
 # simulation study comparing different algorithms
 # and at different sample sizes
@@ -161,3 +161,56 @@ using CSV
 CSV.write("examples/subgroup_simulation_study.csv", df)
 
 
+# simulation study for confidence interval coverage
+Nsims = 5
+# setting - parameter true values
+β₁ = [80., 0.] # regression parameters baseline
+β₂ = [0., 30.] # increases due to latent subgroup
+γ = [-1.39, 1.79] # rate of Gene X in women = .6, in men = .2
+σ = 1.
+θ = [80., 0., 0., 30., -1.39, 1.79, 1.]
+
+function coverage(θ, lb, ub)
+    if θ >= lb && θ <= ub
+        return 1
+    else
+        return 0
+    end
+end
+
+# no parallized loop because confint is parallel
+N = 100
+bootsamples = 1000
+bootss = 80
+coverage_counts_DE = zeros(length(θ))
+coverage_counts_εDE = zeros(length(θ))
+for i in 1:Nsims
+
+    println("Simulation ", i, "/", Nsims)
+
+    # generate dataset
+    mod = generate_lnm(N, β₁, β₂, γ, σ)
+    # compute confidence intervals for each algorithm
+    # only using GA, DE
+    # have to define bounds here for GA
+    
+    M_DE = confint!(mod, bootsamples, bootss, "DE")
+    M_εDE = confint!(mod, bootsamples, bootss, "εDE")
+
+    # check coverage
+    for j in eachindex(θ)
+        coverage_counts_DE[j] += coverage(θ[j], M_DE[j, 2], M_DE[j, 3])
+    end
+
+    for j in eachindex(θ)
+        coverage_counts_εDE[j] += coverage(θ[j], M_DE[j, 2], M_DE[j, 3])
+    end
+
+
+
+end
+
+# save results
+coverage_DF = DataFrame(DE = coverage_counts_DE, εDE = coverage_counts_εDE)
+using CSV
+CSV.write("examples/subgroup_CI_coverage.csv", coverage_DF)

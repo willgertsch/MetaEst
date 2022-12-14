@@ -305,7 +305,8 @@ end
     Note that this is parallelized by default.
 """
 function confint!(
-    m::LnmModel{T}, nsamples::Int, sample_size::Int) where T <: AbstractFloat
+    m::LnmModel{T}, nsamples::Int, sample_size::Int,
+    method::String) where T <: AbstractFloat
 
     β₁s = Matrix{T}(undef, nsamples, size(m.β₁, 1))
     β₂s = Matrix{T}(undef, nsamples, size(m.β₂, 1))
@@ -325,7 +326,12 @@ function confint!(
         modᵢ = LnmModel(obs)
 
         # fit model
-        fit!(modᵢ, DE())
+        if method == "DE"
+            fit!(modᵢ, DE())
+        elseif method == "εDE"
+            fit!(modᵢ, εDE())
+        end
+        
 
         # save parameter values
         β₁s[i, :] .= modᵢ.β₁
