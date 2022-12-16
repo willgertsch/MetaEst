@@ -181,16 +181,22 @@ end
 
 Fit a `LnmModel` object by ML using a metaheuristic algorithm.
 """
-function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm)
+function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm,
+    bounds::Matrix)
 
+    # dimensions
+    n = size(m.obs.Y, 1)
+    q₁ = size(m.obs.Z, 2)
+    q₂ = size(m.obs.X, 2)
+    
     # construct objective function
     function f(x)
 
         # name parameters
-        β₁ = x[1:2]
-        β₂ = x[3:4]
-        γ = x[5:6]
-        σ = x[7]
+        β₁ = x[1:q₁]
+        β₂ = x[(q₁ + 1):(2q₁)]
+        γ = x[(2q₁ + 1):(2q₁ + q₂)]
+        σ = x[2q₁ + q₂]
 
         # obs is external
         # flip sign for minimizer
@@ -202,13 +208,14 @@ function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm)
     end
 
     # set bounds
-    minY = minimum(m.obs.Y)
-    maxY = maximum(m.obs.Y)
-    rangeY = maxY - minY
-    sdY = √(var(m.obs.Y))
-    bounds = [
-    minY -rangeY -rangeY 0. -10. -5. 0.;
-    maxY rangeY rangeY rangeY 10. 5. sdY]
+    #minY = minimum(m.obs.Y)
+    #maxY = maximum(m.obs.Y)
+    #rangeY = maxY - minY
+    #sdY = √(var(m.obs.Y))
+    #bounds = [
+    #minY -rangeY -rangeY 0. -10. -5. 0.;
+    #maxY rangeY rangeY rangeY 10. 5. sdY]
+    
 
     # call optimizer
     result = optimize(
@@ -219,10 +226,10 @@ function fit!(m::LnmModel, method::Metaheuristics.AbstractAlgorithm)
 
     # extract parameters
     x = result.best_sol.x
-    m.β₁ = x[1:2]
-    m.β₂ = x[3:4]
-    m.γ = x[5:6]
-    m.σ = x[7]
+    m.β₁ = x[1:q₁]
+    m.β₂ = x[(q₁ + 1):(2q₁)]
+    m.γ = x[(2q₁ + 1):(2q₁ + q₂)]
+    m.σ = x[2q₁ + q₂]
 
 
     # return likelihood
@@ -234,16 +241,16 @@ end
 
 # model using all methods
 # return matrix of log-likelihoods and parameter estimates
-function fit_all!(m::LnmModel)
+function fit_all!(m::LnmModel, bounds::Matrix)
 
     # have to define bounds here for GA
-    minY = minimum(m.obs.Y)
-    maxY = maximum(m.obs.Y)
-    rangeY = maxY - minY
-    sdY = √(var(m.obs.Y))
-    bounds = [
-    minY -rangeY -rangeY 0. -10. -5. 0.;
-    maxY rangeY rangeY rangeY 10. 5. sdY]
+    #minY = minimum(m.obs.Y)
+    #maxY = maximum(m.obs.Y)
+    #rangeY = maxY - minY
+    #sdY = √(var(m.obs.Y))
+    #bounds = [
+    #minY -rangeY -rangeY 0. -10. -5. 0.;
+    #maxY rangeY rangeY rangeY 10. 5. sdY]
 
     # list of all metaheuristics and options
     metaheuristics = [
@@ -271,7 +278,7 @@ function fit_all!(m::LnmModel)
 
     # fit using metaheuristics
     for i in eachindex(metaheuristics)
-        lls[i] = fit!(m, metaheuristics[i])
+        lls[i] = fit!(m, metaheuristics[i], bounds)
 
         β₁[i, :] = m.β₁
         β₂[i, :] = m.β₂
@@ -306,7 +313,7 @@ end
 """
 function confint!(
     m::LnmModel{T}, nsamples::Int, sample_size::Int,
-    method::String) where T <: AbstractFloat
+    method::String, bounds::Matrix) where T <: AbstractFloat
 
     β₁s = Matrix{T}(undef, nsamples, size(m.β₁, 1))
     β₂s = Matrix{T}(undef, nsamples, size(m.β₂, 1))
@@ -327,9 +334,9 @@ function confint!(
 
         # fit model
         if method == "DE"
-            fit!(modᵢ, DE())
+            fit!(modᵢ, DE(), bounds)
         elseif method == "εDE"
-            fit!(modᵢ, εDE())
+            fit!(modᵢ, εDE(), bounds)
         end
         
 

@@ -65,16 +65,25 @@ Geom.subplot_grid(Geom.density))
 # bimodel effect is fully accounted for
 
 # fit
+# set bounds
+minY = minimum(Y)
+maxY = maximum(Y)
+rangeY = maxY - minY
+sdY = √(var(Y))
+bounds = [
+    minY -rangeY -rangeY 0. -10. -5. 0.;
+    maxY rangeY rangeY rangeY 10. 5. sdY]
 obs = LnmObs(Y, X, Z)
 mod = LnmModel(obs)
 MetaEst.fit!(
     mod,
-    DE()
+    DE(),
+    bounds
 )
 
 
 # fit using all algorithms
-results = fit_all!(mod)
+results = fit_all!(mod, bounds)
 
 df = DataFrame(results, ["loglik", "β₁₁", "β₁₂", "β₂₁", "β₂₂", "γ₁", "γ₂", "σ"])[1:7, :];
 df.method = ["ECA", "DE", "PSO", "SA", "WOA", "GA", "εDE"];
@@ -82,7 +91,7 @@ select!(df, :method, :); # reorder columns
 sort!(df, :loglik, rev = true)
 
 # confidence intervals using bootstrapping
-M = confint!(mod, 1000, 80, "DE")
+M = confint!(mod, 1000, 80, "DE", bounds)
 
 # simulation study comparing different algorithms
 # and at different sample sizes
@@ -214,3 +223,57 @@ end
 coverage_DF = DataFrame(DE = coverage_counts_DE, εDE = coverage_counts_εDE)
 using CSV
 CSV.write("examples/subgroup_CI_coverage.csv", coverage_DF)
+
+
+# analysis using ATN data
+using CSV
+analysis_data = CSV.read("C:/Users/wgertsch/Desktop/subgroup/data/study2.csv", DataFrame)
+
+# process data
+n = size(analysis_data, 1)
+Y = analysis_data[!, "log10_vl_24m"]
+Z = analysis_data[!, ["log10_vl_baseline", "intv_binary"]]
+Z = hcat(ones(n), Z)
+Z = Matrix(Z)
+X = analysis_data[!, ["sex", "log10_vl_baseline", "black"]]
+X = hcat(ones(n), X)
+X = Matrix(X)
+
+# fit model
+obs = LnmObs(Y, X, Z)
+mod = LnmModel(obs)
+minY = minimum(Y)
+maxY = maximum(Y)
+rangeY = maxY - minY
+sdY = √(var(Y))
+bounds = [
+    minY -rangeY -rangeY -rangeY -rangeY 0. -10. -5. -5. -5. 0.;
+    maxY rangeY rangeY rangeY rangeY rangeY 10. 5. 5. 5. sdY
+]
+bounds = [
+
+]
+Random.seed!(1234)
+MetaEst.fit!(
+    mod,
+    DE(),
+    bounds
+)
+
+mod.β₁
+mod.β₂
+mod.γ
+mod.σ
+
+# try fitting all models
+Random.seed!(1234567)
+results = fit_all!(mod, bounds)
+df = DataFrame(results, ["loglik", "β₁₁", "β₁₂", "β₁₃", "β₂₁", "β₂₂", "β₂₃", "γ₀", "γ₁", "γ₂", "γ₃", "σ"])[1:7, :];
+df.method = ["ECA", "DE", "PSO", "SA", "WOA", "GA", "εDE"];
+select!(df, :method, :); # reorder columns
+sort!(df, :loglik, rev = true)
+print(df)
+
+# confidence interval
+M = confint!(mod, 1000, 60, "DE", bounds)
+print(M)
