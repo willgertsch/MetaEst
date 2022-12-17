@@ -247,12 +247,10 @@ maxY = maximum(Y)
 rangeY = maxY - minY
 sdY = √(var(Y))
 bounds = [
-    minY -rangeY -rangeY -rangeY -rangeY 0. -10. -5. -5. -5. 0.;
-    maxY rangeY rangeY rangeY rangeY rangeY 10. 5. 5. 5. sdY
+    minY -rangeY -rangeY -rangeY -rangeY -rangeY -10. -5. -5. -5. 0.;
+    maxY rangeY rangeY rangeY rangeY 0. 10. 5. 5. 5. sdY
 ]
-bounds = [
 
-]
 Random.seed!(1234)
 MetaEst.fit!(
     mod,
@@ -266,14 +264,20 @@ mod.γ
 mod.σ
 
 # try fitting all models
-Random.seed!(1234567)
+Random.seed!(12345)
 results = fit_all!(mod, bounds)
 df = DataFrame(results, ["loglik", "β₁₁", "β₁₂", "β₁₃", "β₂₁", "β₂₂", "β₂₃", "γ₀", "γ₁", "γ₂", "γ₃", "σ"])[1:7, :];
 df.method = ["ECA", "DE", "PSO", "SA", "WOA", "GA", "εDE"];
 select!(df, :method, :); # reorder columns
 sort!(df, :loglik, rev = true)
 print(df)
+CSV.write("examples/results.csv", df)
 
 # confidence interval
 M = confint!(mod, 1000, 60, "DE", bounds)
 print(M)
+
+# predict group membership
+η = X * mod.γ
+p = exp.(η)./(1 .+ exp.(η))
+sum(p .>= .5)
