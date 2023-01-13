@@ -15,6 +15,7 @@ include("logistic_normal_mixture.jl")
 include("1d_gaussian_mixture.jl")
 include("1d_mixtures.jl")
 include("lnmm.jl")
+include("lca.jl")
 
 export 
 logl,
@@ -38,6 +39,7 @@ logl2!,
 ilogit!,
 naive_logl!,
 generate_lnm,
-confint!
+confint!,
+LCA
 
 end # module
