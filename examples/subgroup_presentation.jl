@@ -277,7 +277,14 @@ CSV.write("examples/results.csv", df)
 M = confint!(mod, 1000, 60, "DE", bounds)
 print(M)
 
-# predict group membership
-η = X * mod.γ
-p = exp.(η)./(1 .+ exp.(η))
-sum(p .>= .5)
+# group membership scores
+# intercept, sex, vl, race
+X  = [
+    1 0 0 0;
+    1 1 0 0
+    1 0 0 1
+    1 0 1.3 0
+    1 0 2.3 0]
+exγ = [3.69, -0.27, -0.94, -0.43]
+η = X * exγ 
+exp.(η) ./ (1 .+ exp.(η))
